@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Industrial SCADA</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gaugeJS/dist/gauge.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+}
+
+.panel{
+display:flex;
+justify-content:space-around;
+margin-top:30px;
+}
+
+.card{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+width:250px;
+}
+
+.alarm{
+color:red;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Industrial SCADA Dashboard</h1>
+
+<div class="panel">
+
+<div class="card">
+<h3>Temperature</h3>
+<canvas id="tempGauge"></canvas>
+<div id="tempAlarm"></div>
+</div>
+
+<div class="card">
+<h3>Humidity</h3>
+<canvas id="humGauge"></canvas>
+<div id="humAlarm"></div>
+</div>
+
+<div class="card">
+<h3>Pressure</h3>
+<canvas id="pressGauge"></canvas>
+<div id="pressAlarm"></div>
+</div>
+
+</div>
+
+<h2>History</h2>
+
+<canvas id="historyChart"></canvas>
+
+<script>
+
+async function update(){
+
+const r=await fetch("/sensors")
+const d=await r.json()
+
+tempGauge.set(d.temperature)
+humGauge.set(d.humidity)
+pressGauge.set(d.pressure)
+
+if(d.temperature>28){
+document.getElementById("tempAlarm").innerHTML="ALARM"
+}else{
+document.getElementById("tempAlarm").innerHTML=""
+}
+
+}
+
+setInterval(update,2000)
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Gateway Dashboard</title>
+</head>
+
+<body>
+
+<h1>Modbus → OPC UA Gateway</h1>
+
+<button onclick="loadData()">Update</button>
+
+<p id="output"></p>
+
+<script>
+
+async function loadData(){
+
+let r = await fetch("http://localhost:8000/data")
+
+let data = await r.json()
+
+document.getElementById("output").innerHTML =
+JSON.stringify(data)
+
+}
+
+</script>
+
+</body>
+
+</html>

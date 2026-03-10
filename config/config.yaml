@@ -1,0 +1,13 @@
+modbus:
+
+  host: localhost
+  port: 5020
+  slave_id: 1
+
+mapping:
+
+  temperature:
+    register: 0
+
+  pressure:
+    register: 1

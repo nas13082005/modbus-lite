@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SCADA Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<h2>Virtual SCADA Dashboard</h2>
+
+<canvas id="tempChart"></canvas>
+<canvas id="humChart"></canvas>
+<canvas id="pressChart"></canvas>
+
+<script>
+
+let tempData=[]
+let humData=[]
+let pressData=[]
+let labels=[]
+
+const tempChart=new Chart(document.getElementById("tempChart"),{
+type:'line',
+data:{labels:labels,datasets:[{label:"Temperature",data:tempData}]}
+})
+
+const humChart=new Chart(document.getElementById("humChart"),{
+type:'line',
+data:{labels:labels,datasets:[{label:"Humidity",data:humData}]}
+})
+
+const pressChart=new Chart(document.getElementById("pressChart"),{
+type:'line',
+data:{labels:labels,datasets:[{label:"Pressure",data:pressData}]}
+})
+
+async function updateData(){
+
+const response=await fetch("/sensors")
+const data=await response.json()
+
+const time=new Date().toLocaleTimeString()
+
+labels.push(time)
+
+tempData.push(data.temperature)
+humData.push(data.humidity)
+pressData.push(data.pressure)
+
+if(labels.length>20){
+
+labels.shift()
+tempData.shift()
+humData.shift()
+pressData.shift()
+
+}
+
+tempChart.update()
+humChart.update()
+pressChart.update()
+
+}
+
+setInterval(updateData,2000)
+
+</script>
+
+</body>
+</html>
