@@ -1,13 +1,30 @@
 modbus:
-
-  host: localhost
+  host: 172.25.160.1
   port: 5020
   slave_id: 1
+  timeout: 3          # секунд до таймаута соединения
+  retry_count: 3      # попыток переподключения
+
+opcua:
+  endpoint: "opc.tcp://0.0.0.0:4840"
+  namespace: "IndustrialGateway"
+  device_name: "VirtualSensor"
+
+api:
+  host: "127.0.0.1"
+  port: 8000
+
+database:
+  path: "sensors.db"
+  max_history: 50     # записей в ответе /history
 
 mapping:
-
   temperature:
     register: 0
-
-  pressure:
+    unit: "°C"
+  humidity:
     register: 1
+    unit: "%"
+  pressure:
+    register: 2
+    unit: "hPa"
