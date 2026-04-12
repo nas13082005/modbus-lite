@@ -1,91 +1,36 @@
-# opcua_server.py
-import sqlite3
-import time
-import struct
-from opcua import Server
-from pymodbus.client.sync import ModbusTcpClient
+from asyncua import Server
 
-# --- OPC UA Server Setup ---
-server = Server()
-server.set_endpoint("opc.tcp://0.0.0.0:4840")
 
-uri = "http://example.org"
-idx = server.register_namespace(uri)
+class OPCUAServer:
 
-objects = server.get_objects_node()
-device = objects.add_object(idx, "VirtualSensors")
+    def __init__(self):
 
-temperature = device.add_variable(idx, "Temperature", 0.0)
-humidity = device.add_variable(idx, "Humidity", 0.0)
-pressure = device.add_variable(idx, "Pressure", 0.0)
+        self.server = Server()
+        self.variables = {}
 
-temperature.set_writable()
-humidity.set_writable()
-pressure.set_writable()
+    async def start(self):
 
-# --- Modbus Client Setup ---
-client = ModbusTcpClient("127.0.0.1", port=5020)
-if not client.connect():
-    print("Ошибка подключения к Modbus")
-    exit(1)
+        await self.server.init()
 
-# --- SQLite Setup ---
-conn = sqlite3.connect("sensors.db")
-cursor = conn.cursor()
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS sensors(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    temperature REAL,
-    humidity REAL,
-    pressure REAL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-""")
-conn.commit()
+        self.server.set_endpoint("opc.tcp://0.0.0.0:4840")
 
-# --- Start OPC UA Server ---
-server.start()
-print("OPC UA server started at port 4840")
+        uri = "IndustrialGateway"
 
-try:
-    while True:
-        # Чтение 4 регистров: t(0), h(1), p(2+3)
-        result = client.read_holding_registers(0, 4)
-        if result.isError():
-            print("Ошибка чтения Modbus:", result)
-            time.sleep(2)
-            continue
+        idx = await self.server.register_namespace(uri)
 
-        if len(result.registers) < 4:
-            print("Недостаточно регистров Modbus")
-            time.sleep(2)
-            continue
+        objects = self.server.nodes.objects
 
-        # Температура и влажность 16-bit
-        t = result.registers[0]
-        h = result.registers[1]
+        device = await objects.add_object(idx, "ModbusDevice")
 
-        # Давление собираем из двух 16-bit регистров
-        pressure_int = (result.registers[2] << 16) + result.registers[3]
-        p = pressure_int / 100.0   # масштаб 100
+        self.variables["temperature"] = await device.add_variable(idx, "Temperature", 0)
+        self.variables["pressure"] = await device.add_variable(idx, "Pressure", 0)
 
-        # Обновление OPC UA
-        temperature.set_value(t)
-        humidity.set_value(h)
-        pressure.set_value(p)
-        print(f"OPCUA Updated: Temperature={t}, Humidity={h}, Pressure={p:.2f}")
+        for v in self.variables.values():
+            await v.set_writable()
 
-        # Запись в SQLite
-        cursor.execute(
-            "INSERT INTO sensors(temperature,humidity,pressure) VALUES(?,?,?)",
-            (t, h, p)
-        )
-        conn.commit()
+        await self.server.start()
 
-        time.sleep(2)
+    async def update(self, name, value):
 
-finally:
-    print("Остановка сервера...")
-    server.stop()
-    client.close()
-    conn.close()
+        if name in self.variables:
+            await self.variables[name].write_value(value)
